@@ -1,15 +1,15 @@
 {
-    "name": "test",
-    "description": "",
+    "name": "ringbuffer",
+    "description": "An extension to provide a circular buffer interface",
     "dependencies": {
         "core": "*",
         "radio": "*",
-        "microphone": "*",
-        "Banana Example": "github:carlosperate/pxt-banana#v0.1.7"
+        "microphone": "*"
     },
     "files": [
         "main.blocks",
         "main.ts",
+        "ringbuffer.ts",
         "README.md"
     ],
     "testFiles": [
