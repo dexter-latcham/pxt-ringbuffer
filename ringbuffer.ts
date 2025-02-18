@@ -1,6 +1,8 @@
 //TODO
-//auto switch from int to float when a float is inputted
-
+//when an unexpected float is inputted switch from storing ints
+//test memory constraints
+//better tooltips to explain the advanced usage
+//sometimes .append isn't picked up as a block for the float class
 
 enum StoreChoice{
     //% block="Float"
