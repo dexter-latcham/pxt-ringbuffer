@@ -30,8 +30,10 @@ namespace ringBuffer{
         _maxElements=1;
         _start = 0;
         _size = 0;
+        appendFunc: (value:number)=>void;
+        getFunc: (index:number)=>number;
 
-        constructor(numBuffers=3) {
+        constructor(useFloat=false,numBuffers=3) {
             this._bufferCount=numBuffers
             this._maxElements = this._maxBufferContent * this._bufferCount;
             this._buffers = [];
@@ -40,6 +42,14 @@ namespace ringBuffer{
             }
             this._start = 0;
             this._size = 0;
+            
+            if (useFloat) {
+                this.appendFunc=(value:number)=>{this.appendFloat(value)};
+                this.getFunc=(index:number)=>{return this.getFloat(index)};
+            }else{
+                this.appendFunc=(value:number)=>{return this.appendInt(value)};
+                this.getFunc=(index:number)=>{return this.getInt(index)};
+            }
         }
 
         /**
@@ -53,6 +63,10 @@ namespace ringBuffer{
         //% this.shadow=variables_get
         //% value.defl=0
         append(value: number): void{
+            this.appendFunc(value);
+        }
+
+        appendInt(value: number): void{
             let index = (this._start + this._size) % this._maxElements;
             let arrayToInsert = Math.floor(index / this._maxBufferContent);
             let arrayIndex = index - (arrayToInsert * this._maxBufferContent);
@@ -68,6 +82,10 @@ namespace ringBuffer{
             }
         }
 
+        appendFloat(value: number): void{
+            this.appendInt(circularBufferInstance.toHalfPrecisionFloat(value));
+        }
+
         /**
          * Get value at an index
          * @returns the value
@@ -77,6 +95,10 @@ namespace ringBuffer{
         //% this.defl=buffer
         //% this.shadow=variables_get
         get(index:number): number {
+            return this.getFunc(index);
+        }
+
+        getInt(index:number): number {
             if (index < 0 || index >= this._size) {
                 return 0;
             }
@@ -84,6 +106,10 @@ namespace ringBuffer{
             let arrayToInsert = Math.floor(wholeIndex / this._maxBufferContent);
             let arrayIndex = wholeIndex - (arrayToInsert * this._maxBufferContent);
             return this._buffers[arrayToInsert].getNumber(NumberFormat.Int16LE, arrayIndex * 2);
+        }
+
+        getFloat(index:number): number {
+            return circularBufferInstance.fromHalfPrecisionFloat(this.getInt(index))
         }
 
 
@@ -123,14 +149,8 @@ namespace ringBuffer{
         getMaxElements(): number {
             return this._maxElements;
         }
-    }
 
-    export class circularBufferInstanceFloat extends circularBufferInstance{
-        constructor(numBuffers=3) {
-            super(numBuffers);
-        }
-        
-        toHalfPrecisionFloat(value: number) {
+        static toHalfPrecisionFloat(value: number) {
             if (value === 0){return 0;}
             let sign = 0, exponent = 0, mantissa = 0;
             if (value < 0) {
@@ -167,7 +187,7 @@ namespace ringBuffer{
             return (sign << 15) | (exponent << 10) | mantissa;
         }
 
-        fromHalfPrecisionFloat(value:number):number {
+        static fromHalfPrecisionFloat(value:number):number {
             let sign = (value >> 15) & 0x1;
             let exponent = (value >> 10) & 0x1F;  // 5 bits for exponent
             let mantissa = value & 0x3FF;  // 10 bits for mantissa
@@ -191,36 +211,7 @@ namespace ringBuffer{
         }
 
 
-
-
-        /**
-         * append value to buffer
-         * @param value value to insert
-         */
-        //% block="append $value to $this"
-        //% value.min=-32768 value.max=32767
-        //% weight=150
-        //% this.defl=buffer
-        //% this.shadow=variables_get
-        //% value.defl=0
-        //% blockHidden=true
-        append(value: number): void{
-          super.append(this.toHalfPrecisionFloat(value));
-        }
-        
-        /**
-         * Get value at an index
-         * @returns the value
-         */
-        //% block="get value at $index of $this"
-        //% weight=140
-        //% this.defl=buffer
-        //% this.shadow=variables_get
-        //% blockHidden=true
-        get(index:number): number {
-            return this.fromHalfPrecisionFloat(super.get(index));
-        }
-    } 
+    }
 
    /**
      * Create a buffer widget and automtically set it to a variable
@@ -244,10 +235,10 @@ namespace ringBuffer{
     //% expandableArgumentMode="enabled"
     //% inlineInputModeLimit=1
     //%inlineInputMode=variable
-    export function createBufferAdv(useFloat:StoreChoice=StoreChoice.Float, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance | circularBufferInstanceFloat {
+    export function createBufferAdv(useFloat:StoreChoice=StoreChoice.Float, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance{
         if (useFloat === StoreChoice.Float){
-            return new circularBufferInstanceFloat(bufferLevel);
+            return new circularBufferInstance(true,bufferLevel);
         }
-        return new circularBufferInstance(bufferLevel);
+        return new circularBufferInstance(false,bufferLevel);
     }
 }
