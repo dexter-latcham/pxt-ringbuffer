@@ -22,6 +22,7 @@ namespace ringBuffer{
          * @param value value to insert
          */
         //% block="append $value to $this"
+        //% weight=150
         //% this.defl=buffer
         //% this.shadow=variables_get
         //% value.defl=0
@@ -46,6 +47,7 @@ namespace ringBuffer{
          * @returns the value
          */
         //% block="get value at $index of $this"
+        //% weight=140
         //% this.defl=buffer
         //% this.shadow=variables_get
         get(index:number): number {
@@ -64,6 +66,7 @@ namespace ringBuffer{
          * @returns the number of elements
          */
         //% block="element count of $this"
+        //% weight=120
         //% this.defl=buffer
         //% this.shadow=variables_get
         length(): number {
@@ -75,7 +78,8 @@ namespace ringBuffer{
          * is the buffer fully populated
          * @returns true if buffer full
          */
-        //% block="$this full"
+        //% block="is $this full"
+        //% weight=110
         //% this.defl=buffer
         //% this.shadow=variables_get
         full(): boolean {
@@ -86,7 +90,8 @@ namespace ringBuffer{
          * maximum buffer size
          * @returns max size
          */
-        //% block="maximum elements in $this"
+        //% block="maximum elements of $this"
+        //% weight=130
         //% this.defl=buffer
         //% this.shadow=variables_get
         getMaxElements(): number {
@@ -98,6 +103,7 @@ namespace ringBuffer{
      * Create a buffer widget and automtically set it to a variable
      */
     //% block="create buffer"
+    //% weight=200
     //% blockSetVariable=buffer
     export function createBuffer(): circularBufferInstance {
         return new circularBufferInstance();
