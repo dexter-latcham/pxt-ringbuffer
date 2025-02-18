@@ -1,6 +1,7 @@
 {
     "name": "ringbuffer",
     "description": "An extension to provide a circular buffer interface",
+    "version": "0.0.1",
     "dependencies": {
         "core": "*",
         "radio": "*",
