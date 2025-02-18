@@ -235,7 +235,7 @@ namespace ringBuffer{
     //% expandableArgumentMode="enabled"
     //% inlineInputModeLimit=1
     //%inlineInputMode=variable
-    export function createBufferAdv(useFloat:StoreChoice=StoreChoice.Float, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance{
+    export function createBufferAdv(useFloat:StoreChoice=StoreChoice.Integer, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance{
         if (useFloat === StoreChoice.Float){
             return new circularBufferInstance(true,bufferLevel);
         }
