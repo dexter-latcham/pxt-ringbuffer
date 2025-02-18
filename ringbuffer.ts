@@ -8,8 +8,9 @@ enum StoreChoice{
     //% block="Float"
     Float=1,
     //% block="Integer"
-    Integer=0
-
+    Integer=0,
+    //% block="Integer 32 bit"
+    Integer32=2
 }
 
 enum BufferMemorySize{
@@ -25,25 +26,46 @@ enum BufferMemorySize{
 namespace ringBuffer{
     export class circularBufferInstance{
         _buffers: Buffer[] = [];
-        _maxBufferContent = 5000;
+        _maxAllocationSize=10000;
+        _maxBufferContent = 0;
         _bufferCount = 0;
         _maxElements=1;
         _start = 0;
         _size = 0;
+
         appendFunc: (value:number)=>void;
         getFunc: (index:number)=>number;
-
-        constructor(useFloat=false,numBuffers=3) {
+        setPinBufferFunc:(arrayIndex:number,index:number,value:number)=>void;
+        getPinBufferFunc:(arrayIndex:number,index:number)=>number;
+        constructor(dataType=StoreChoice.Integer,numBuffers=3) {
             this._bufferCount=numBuffers
+            if(dataType == StoreChoice.Integer32){
+                this._maxBufferContent = this._maxAllocationSize/4
+                this.setPinBufferFunc=(arrayIndex:number,index:number,value:number)=>{
+                    this._buffers[arrayIndex].setNumber(NumberFormat.Int32LE, index * 4, value);
+                }
+                this.getPinBufferFunc=(arrayIndex:number,index:number)=>{
+                    return this._buffers[arrayIndex].getNumber(NumberFormat.Int32LE, index * 4);
+                };
+            }else{
+                this._maxBufferContent = this._maxAllocationSize/4
+                this.setPinBufferFunc=(arrayIndex:number,index:number,value:number)=>{
+                    this._buffers[arrayIndex].setNumber(NumberFormat.Int16LE, index * 2, value);
+                }
+                this.getPinBufferFunc=(arrayIndex:number,index:number)=>{
+                    return this._buffers[arrayIndex].getNumber(NumberFormat.Int16LE, index * 2);
+                };
+            }
+
             this._maxElements = this._maxBufferContent * this._bufferCount;
             this._buffers = [];
             for (let i = 0; i < this._bufferCount; i++) {
-                this._buffers.push(pins.createBuffer(this._maxBufferContent * 2));
+                this._buffers.push(pins.createBuffer(this._maxBufferContent));
             }
             this._start = 0;
             this._size = 0;
             
-            if (useFloat) {
+            if(dataType == StoreChoice.Float){
                 this.appendFunc=(value:number)=>{this.appendFloat(value)};
                 this.getFunc=(index:number)=>{return this.getFloat(index)};
             }else{
@@ -72,12 +94,12 @@ namespace ringBuffer{
             let arrayIndex = index - (arrayToInsert * this._maxBufferContent);
 
             if (this._size < this._maxElements) {
-                this._buffers[arrayToInsert].setNumber(NumberFormat.Int16LE, arrayIndex * 2, value);
+                this.setPinBufferFunc(arrayToInsert,arrayIndex,value);
                 this._size++;
             } else {
                 arrayToInsert = Math.floor(this._start / this._maxBufferContent);
                 arrayIndex = this._start - (arrayToInsert * this._maxBufferContent);
-                this._buffers[arrayToInsert].setNumber(NumberFormat.Int16LE, arrayIndex * 2, value);
+                this.setPinBufferFunc(arrayToInsert,arrayIndex,value);
                 this._start = (this._start + 1) % this._maxElements;
             }
         }
@@ -105,7 +127,8 @@ namespace ringBuffer{
             let wholeIndex = (this._start + index) % this._maxElements;
             let arrayToInsert = Math.floor(wholeIndex / this._maxBufferContent);
             let arrayIndex = wholeIndex - (arrayToInsert * this._maxBufferContent);
-            return this._buffers[arrayToInsert].getNumber(NumberFormat.Int16LE, arrayIndex * 2);
+
+            return this.getPinBufferFunc(arrayToInsert,arrayIndex);
         }
 
         getFloat(index:number): number {
@@ -226,8 +249,8 @@ namespace ringBuffer{
     /**
      * Create a buffer widget and automtically set it to a variable
      */
-    //% block="create buffer || storing $useFloat | memory use $bufferLevel"
-    //% useFloat.defl=StoreChoice.Float
+    //% block="create buffer || storing $storeType | memory use $bufferLevel"
+    //% storeType.defl=StoreChoice.Integer
     //% bufferLevel.defl=BufferMemorySize.High
     //% weight=200
     //% blockSetVariable=buffer
@@ -235,10 +258,7 @@ namespace ringBuffer{
     //% expandableArgumentMode="enabled"
     //% inlineInputModeLimit=1
     //%inlineInputMode=variable
-    export function createBufferAdv(useFloat:StoreChoice=StoreChoice.Integer, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance{
-        if (useFloat === StoreChoice.Float){
-            return new circularBufferInstance(true,bufferLevel);
-        }
-        return new circularBufferInstance(false,bufferLevel);
+    export function createBufferAdv(storeType:StoreChoice=StoreChoice.Integer, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance{
+        return new circularBufferInstance(storeType,bufferLevel);
     }
 }
