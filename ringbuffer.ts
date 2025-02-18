@@ -82,7 +82,7 @@ namespace ringBuffer {
     }
     export class circularBufferInstance {
         _buffers: Buffer[] = [];
-        _maxSingleBufferAllocationBytes = 200;
+        _maxSingleBufferAllocationBytes = 10000;
         _maxSingleBufferElements = 0;
         _bufferCount = 0;
         _maxTotalElements = 0;
