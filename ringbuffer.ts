@@ -19,7 +19,6 @@ enum BufferMemorySize {
 //% color="#FF8000"
 namespace ringBuffer {
     export function toHalfPrecisionFloat(value: number) {
-        serial.writeLine("to float");
         if (value === 0) { return 0; }
         let sign = 0, exponent = 0, mantissa = 0;
         if (value < 0) {
@@ -57,8 +56,6 @@ namespace ringBuffer {
     }
 
     export function fromHalfPrecisionFloat(value: number): number {
-
-        serial.writeLine("from float");
         let sign = (value >> 15) & 0x1;
         let exponent = (value >> 10) & 0x1F;  // 5 bits for exponent
         let mantissa = value & 0x3FF;  // 10 bits for mantissa
@@ -198,6 +195,7 @@ namespace ringBuffer {
         //% weight=120
         //% this.defl=buffer
         //% this.shadow=variables_get
+        //% group="Details"
         length(): number {
             return this._size;
         }
@@ -211,6 +209,7 @@ namespace ringBuffer {
         //% weight=110
         //% this.defl=buffer
         //% this.shadow=variables_get
+        //% group="Details"
         full(): boolean {
             return this._size == this._maxTotalElements;
         }
@@ -223,6 +222,7 @@ namespace ringBuffer {
         //% weight=130
         //% this.defl=buffer
         //% this.shadow=variables_get
+        //% group="Details"
         getMaxElements(): number {
             return this._maxTotalElements;
         }
