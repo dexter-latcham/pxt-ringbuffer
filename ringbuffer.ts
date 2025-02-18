@@ -1,14 +1,36 @@
+//TODO
+//auto switch from int to float when a float is inputted
+
+
+enum StoreChoice{
+    //% block="Float"
+    Float=1,
+    //% block="Integer"
+    Integer=0
+
+}
+
+enum BufferMemorySize{
+    //% block="Low"
+    Low=1,
+    //% block="Medium"
+    Medium=2,
+    //% block="High"
+    High=3
+}
+
 //% color="#FF8000"
 namespace ringBuffer{
     export class circularBufferInstance{
         _buffers: Buffer[] = [];
-        _maxBufferContent = 1000;
-        _bufferCount = 3;
+        _maxBufferContent = 5000;
+        _bufferCount = 0;
         _maxElements=1;
         _start = 0;
         _size = 0;
 
-        constructor() {
+        constructor(numBuffers=3) {
+            this._bufferCount=numBuffers
             this._maxElements = this._maxBufferContent * this._bufferCount;
             this._buffers = [];
             for (let i = 0; i < this._bufferCount; i++) {
@@ -17,11 +39,13 @@ namespace ringBuffer{
             this._start = 0;
             this._size = 0;
         }
+
         /**
          * append value to buffer
          * @param value value to insert
          */
         //% block="append $value to $this"
+        //% value.min=-32768 value.max=32767
         //% weight=150
         //% this.defl=buffer
         //% this.shadow=variables_get
@@ -99,6 +123,103 @@ namespace ringBuffer{
         }
     }
 
+    export class circularBufferInstanceFloat extends circularBufferInstance{
+        constructor(numBuffers=3) {
+            super(numBuffers);
+        }
+        
+        toHalfPrecisionFloat(value: number) {
+            if (value === 0){return 0;}
+            let sign = 0, exponent = 0, mantissa = 0;
+            if (value < 0) {
+                sign = 1;
+                value = -value;
+            }
+
+            if (value === 0) {
+                return 0;
+            }
+
+            while (value >= 2) {
+                value /= 2;
+                exponent++;
+            }
+
+            while (value < 1) {
+                value *= 2;
+                exponent--;
+            }
+            exponent += 15; // 15 offset
+            if (exponent >=31){
+               //+inf
+                return (sign<<15) | (0x1F <<10)
+            }
+            if (exponent <=0){
+                //denormalise, exponent=0
+                exponent=0
+                mantissa = value
+            }else{
+                mantissa = value - 1;//remove leading 1 from mantissa
+            }
+            mantissa = Math.floor(mantissa * (2**10))
+            return (sign << 15) | (exponent << 10) | mantissa;
+        }
+
+        fromHalfPrecisionFloat(value:number):number {
+            let sign = (value >> 15) & 0x1;
+            let exponent = (value >> 10) & 0x1F;  // 5 bits for exponent
+            let mantissa = value & 0x3FF;  // 10 bits for mantissa
+
+            //special exponent handling
+            if (exponent === 0) {
+                if (mantissa === 0) {
+                    return 0.0;
+                } else {
+                    // no leading 1 in mantissa
+                    return Math.pow(-1, sign) * (mantissa / Math.pow(2, 10)) * Math.pow(2, -14);
+                }
+            }
+
+            // add back implicit bit
+            mantissa = 1 + (mantissa / Math.pow(2, 10));
+            //remove offset from exponent
+
+            let actualExponent = exponent - 15;
+            return Math.pow(-1, sign) * mantissa * Math.pow(2, actualExponent);
+        }
+
+
+
+
+        /**
+         * append value to buffer
+         * @param value value to insert
+         */
+        //% block="append $value to $this"
+        //% value.min=-32768 value.max=32767
+        //% weight=150
+        //% this.defl=buffer
+        //% this.shadow=variables_get
+        //% value.defl=0
+        //% blockHidden=true
+        append(value: number): void{
+          super.append(this.toHalfPrecisionFloat(value));
+        }
+        
+        /**
+         * Get value at an index
+         * @returns the value
+         */
+        //% block="get value at $index of $this"
+        //% weight=140
+        //% this.defl=buffer
+        //% this.shadow=variables_get
+        //% blockHidden=true
+        get(index:number): number {
+            return this.fromHalfPrecisionFloat(super.get(index));
+        }
+    } 
+
    /**
      * Create a buffer widget and automtically set it to a variable
      */
@@ -107,5 +228,24 @@ namespace ringBuffer{
     //% blockSetVariable=buffer
     export function createBuffer(): circularBufferInstance {
         return new circularBufferInstance();
+    }
+    
+    /**
+     * Create a buffer widget and automtically set it to a variable
+     */
+    //% block="create buffer || storing $useFloat | memory use $bufferLevel"
+    //% useFloat.defl=StoreChoice.Float
+    //% bufferLevel.defl=BufferMemorySize.High
+    //% weight=200
+    //% blockSetVariable=buffer
+    //% advanced=true
+    //% expandableArgumentMode="enabled"
+    //% inlineInputModeLimit=1
+    //%inlineInputMode=variable
+    export function createBufferAdv(useFloat:StoreChoice=StoreChoice.Float, bufferLevel:BufferMemorySize=BufferMemorySize.High): circularBufferInstance | circularBufferInstanceFloat {
+        if (useFloat === StoreChoice.Float){
+            return new circularBufferInstanceFloat(bufferLevel);
+        }
+        return new circularBufferInstance(bufferLevel);
     }
 }
